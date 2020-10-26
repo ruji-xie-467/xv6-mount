@@ -199,6 +199,7 @@ fork(void)
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
+  // TODO: copy namespace
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
