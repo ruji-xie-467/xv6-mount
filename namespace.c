@@ -12,6 +12,8 @@
 #include "proc.h"
 #include "spinlock.h"
 
+#define PID_NS 0x00000001
+
 struct {
     struct spinlock lock;
     struct nsproxy nsproxy[NNAMESPACE];
@@ -59,3 +61,25 @@ void get_nsproxy(struct nsproxy* nsproxy) {
     release(&nstable.lock);
 }
 
+/*
+ * unshare allows a process to 'unshare' part of the process
+ * context which was originally shared using clone. This system call gets
+ * a single parameter that is a bitmask of CLONE* flags.
+ */
+int unshare(int flags) {
+    acquire(&nstable.lock);
+    struct proc* p = myproc();
+    struct nsproxy* old_ns = p->nsproxy;
+    if (!(old_ns->count > 1)) {
+        panic("assert fails. namespace.c: 75\n"); // is there any situation that count <= 1 when unshare? (not sure)
+    }
+    p->nsproxy = create_nsproxy();  // should have a different ns now
+    release(&nstable.lock);
+
+    put_nsproxy(old_ns);
+
+    if ((flags & PID_NS) > 0) {
+        //TODO: pid
+    }
+    return 0;
+}
