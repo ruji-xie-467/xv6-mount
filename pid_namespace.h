@@ -21,6 +21,6 @@ void pid_ns_init();
 void pid_ns_put(struct pid_ns* pid_ns);
 void pid_ns_get(struct pid_ns* pid_ns);
 int pid_ns_next_pid(struct pid_ns* pid_ns);
-struct pid_ns* pid_ns_new(struct pid_ns* parent);
+struct pid_ns* pid_ns_new(struct pid_ns* parent_ns);
 struct pid_ns* pid_ns_dup(struct pid_ns* pid_ns);
 int pid_ns_is_max_depth(struct pid_ns* pid_ns);

@@ -86,4 +86,28 @@ struct pid_ns* pid_ns_dup(struct pid_ns* pid_ns) {
     return pid_ns;
 }
 
+struct pid_ns* pid_ns_new(struct pid_ns* parent_namespace) {
+    //alloc a new namespace first
+    struct pid_ns * pid_ns = pid_ns_alloc();
+    //init namespace
+    pid_ns_init_ns(pid_ns, parent_namespace);
+    return pid_ns;
+}
 
+int pid_ns_next_pid(struct pid_ns* pid_ns) {
+    //get lock first to reduce race condition
+    acquire(&pid_ns.lock);
+    int pid = pid_ns->next_pid++;
+    release(&pid_ns->lock);
+    //release lock
+    return pid;
+}
+
+int pid_ns_is_max_depth(struct pid_ns* pid_ns){
+    int depth = 0;
+    while (pid_ns) {
+    depth++;
+    pid_ns = pid_ns->parent;
+    }
+    return depth >= MAX_PID_NS_DEPTH;
+}
