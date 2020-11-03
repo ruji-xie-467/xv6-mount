@@ -188,6 +188,8 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 // namespace.c
 void ns_init(void);
+struct nsproxy* create_nsproxy();
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+#define NULL 0
