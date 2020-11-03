@@ -72,7 +72,7 @@ argptr(int n, char **pp, int size)
 // Fetch the nth word-sized system call argument as a string pointer.
 // Check that the pointer is valid and the string is nul-terminated.
 // (There is no shared writable memory, so the string can't change
-// between this check and being used by the kernel.)
+// between this assert_non_negtive and being used by the kernel.)
 int
 argstr(int n, char **pp)
 {
@@ -103,6 +103,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
+extern int sys_unshare(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -126,6 +127,8 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+
+[SYS_unshare] sys_unshare,
 };
 
 void

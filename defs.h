@@ -1,3 +1,6 @@
+#ifndef XV6_DEF_H
+#define XV6_DEF_H
+
 struct buf;
 struct context;
 struct file;
@@ -187,9 +190,21 @@ int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 
 // namespace.c
+#define PID_NS 0b00000001
 void ns_init(void);
 struct nsproxy* create_nsproxy();
+int unshare(int flags);
+
+// pid_namespace.c
+struct pid_namespace* pid_ns_dup(struct pid_namespace* pid_ns);
+int pid_ns_is_max_depth(struct pid_namespace* pid_ns);
+struct pid_namespace* pid_ns_new(struct pid_namespace* parent_namespace);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
 #define NULL 0
+//#define true 1
+//#define false 0
+typedef enum{false,true} bool;
+
+#endif

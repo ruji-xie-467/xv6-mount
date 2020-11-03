@@ -6,7 +6,7 @@
 #define T_NMI            2      // non-maskable interrupt
 #define T_BRKPT          3      // breakpoint
 #define T_OFLOW          4      // overflow
-#define T_BOUND          5      // bounds check
+#define T_BOUND          5      // bounds assert_non_negtive
 #define T_ILLOP          6      // illegal opcode
 #define T_DEVICE         7      // device not available
 #define T_DBLFLT         8      // double fault
@@ -18,8 +18,8 @@
 #define T_PGFLT         14      // page fault
 // #define T_RES        15      // reserved
 #define T_FPERR         16      // floating point error
-#define T_ALIGN         17      // aligment check
-#define T_MCHK          18      // machine check
+#define T_ALIGN         17      // aligment assert_non_negtive
+#define T_MCHK          18      // machine assert_non_negtive
 #define T_SIMDERR       19      // SIMD floating point error
 
 // These are arbitrarily chosen, but with care not to overlap

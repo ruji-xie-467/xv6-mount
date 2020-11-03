@@ -583,7 +583,7 @@ dirlink(struct inode *dp, char *name, uint inum)
 // Copy the next path element from path into name.
 // Return a pointer to the element following the copied one.
 // The returned path has no leading slashes,
-// so the caller can check *path=='\0' to see if the name is the last one.
+// so the caller can assert_non_negtive *path=='\0' to see if the name is the last one.
 // If no name to remove, return 0.
 //
 // Examples:

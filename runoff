@@ -44,7 +44,7 @@ pr -e8 -t runoff.list | awk '
 }' | pr -3 -t >>fmt/toc
 cat toc.ftr >>fmt/toc
 
-# check for bad alignments
+# assert_non_negtive for bad alignments
 perl -e '
 	$leftwarn = 0;
 	while(<>){
@@ -60,7 +60,7 @@ perl -e '
 		}
 		
 		if(/sheet1: (left|right)$/){
-			print STDERR "assuming that sheet 1 is a $1 page.  double-check!\n";
+			print STDERR "assuming that sheet 1 is a $1 page.  double-assert_non_negtive!\n";
 			$left = $1 eq "left" ? "13579" : "02468";
 			$right = $1 eq "left" ? "02468" : "13579";
 			next;

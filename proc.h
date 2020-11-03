@@ -51,6 +51,7 @@ struct proc {
   char name[16];               // Process name (debugging)
 
   struct nsproxy *nsproxy;     // Namespace proxy object
+  struct pid_namespace *child_pid_namespace; // PID namespace for child procs
 };
 
 // Process memory is laid out contiguously, low addresses first:

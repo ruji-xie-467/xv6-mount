@@ -12,8 +12,6 @@
 #include "proc.h"
 #include "spinlock.h"
 
-#define PID_NS 0x00000001
-
 struct {
     struct spinlock lock;
     struct nsproxy nsproxy[NNAMESPACE];
@@ -74,12 +72,16 @@ int unshare(int flags) {
         panic("assert fails. namespace.c: 75\n"); // is there any situation that count <= 1 when unshare? (not sure)
     }
     p->nsproxy = create_nsproxy();  // should have a different ns now
+    p->nsproxy->pid_ns = pid_ns_dup(old_ns->pid_ns);
     release(&nstable.lock);
 
     put_nsproxy(old_ns);
 
     if ((flags & PID_NS) > 0) {
-        //TODO: pid
+        if (p->child_pid_namespace != false || pid_ns_is_max_depth(p->nsproxy->pid_ns)) {
+            return -1;
+        }
+        p->child_pid_namespace = pid_ns_new(p->nsproxy->pid_ns);
     }
     return 0;
 }

@@ -11,6 +11,7 @@ OBJS = \
 	lapic.o\
 	log.o\
 	main.o\
+	pid_namespace.o\
 	mp.o\
 	namespace.o\
 	picirq.o\
@@ -22,6 +23,7 @@ OBJS = \
 	swtch.o\
 	syscall.o\
 	sysfile.o\
+	sysnamespace.o\
 	sysproc.o\
 	trapasm.o\
 	trap.o\
@@ -77,27 +79,19 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer -std=gnu99
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
 LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
 
-# Disable PIE when possible (for Ubuntu 16.10 toolchain)
-ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]no-pie'),)
-CFLAGS += -fno-pie -no-pie
-endif
-ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]nopie'),)
-CFLAGS += -fno-pie -nopie
-endif
-
-xv6.img: bootblock kernel
-	dd if=/dev/zero of=xv6.img count=10000
+xv6.img: bootblock kernel fs.img
+	dd if=/dev/zero of=xv6.img count=2000
 	dd if=bootblock of=xv6.img conv=notrunc
 	dd if=kernel of=xv6.img seek=1 conv=notrunc
 
 xv6memfs.img: bootblock kernelmemfs
-	dd if=/dev/zero of=xv6memfs.img count=10000
+	dd if=/dev/zero of=xv6memfs.img count=2000
 	dd if=bootblock of=xv6memfs.img conv=notrunc
 	dd if=kernelmemfs of=xv6memfs.img seek=1 conv=notrunc
 
@@ -180,6 +174,7 @@ UPROGS=\
 	_sh\
 	_stressfs\
 	_usertests\
+	_pid_namespace_test\
 	_wc\
 	_zombie\
 
@@ -250,7 +245,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
-	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
+	ln.c ls.c mkdir.c pid_namespace_test.c rm.c stressfs.c usertests.c wc.c zombie.c\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\

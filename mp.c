@@ -67,8 +67,8 @@ mpsearch(void)
 // Search for an MP configuration table.  For now,
 // don't accept the default configurations (physaddr == 0).
 // Check for correct signature, calculate the checksum and,
-// if correct, check the version.
-// To do: check extended table checksum.
+// if correct, assert_non_negtive the version.
+// To do: assert_non_negtive extended table checksum.
 static struct mpconf*
 mpconfig(struct mp **pmp)
 {

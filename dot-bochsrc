@@ -326,7 +326,7 @@ boot: disk
 
 #=======================================================================
 # FLOPPY_BOOTSIG_CHECK: disabled=[0|1]
-# Enables or disables the 0xaa55 signature check on boot floppies
+# Enables or disables the 0xaa55 signature assert_non_negtive on boot floppies
 # Defaults to disabled=0
 # Examples:
 #   floppy_bootsig_check: disabled=0
