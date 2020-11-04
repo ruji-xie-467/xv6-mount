@@ -6,6 +6,8 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "namespace.h"
+#include "pid_namespace.h"
 
 struct {
   struct spinlock lock;
@@ -19,6 +21,15 @@ extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
+
+int get_pid_for_ns(struct proc* proc, struct pid_namespace* pid_ns) {
+  for (int i = 0; i < PID_NAMESPACE_MAX_DEPTH; i++) {
+    if (proc->pids[i].pid_ns == pid_ns) {
+      return proc->pids[i].pid;
+    }
+  }
+  return 0;
+}
 
 void
 pinit(void)
@@ -222,6 +233,39 @@ fork(void)
   release(&ptable.lock);
 
   return pid;
+
+  // struct pid_namespace* cur = curproc->child_pid_namespace;
+  // if (cur) {
+  //   np->nsproxy = namespace_replace_pid_ns(curproc->nsproxy, cur);
+  // } else {
+  //   np->nsproxy = namespacedup(curproc->nsproxy);
+  //   cur = np->nsproxy->pid_ns;
+  // }
+
+  // // for each pid_ns get me a pid
+  // i = 0;
+  // while (cur) {
+  //   if (i >= PID_NAMESPACE_MAX_DEPTH) {
+  //     panic("too many danif!");
+  //   }
+
+  //   np->pids[i].pid = pid_ns_next_pid(cur);
+  //   np->pids[i].pid_ns = cur;
+  //   i++;
+  //   cur = cur->parent;
+  // }
+
+  // np->pid = np->pids[0].pid;
+  // pid = get_pid_for_ns(np, curproc->nsproxy->pid_ns);
+  // pid = np->pid;
+
+  // acquire(&ptable.lock);
+
+  // np->state = RUNNABLE;
+
+  // release(&ptable.lock);
+
+  // return pid;
 }
 
 // Exit the current process.  Does not return.

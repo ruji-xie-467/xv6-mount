@@ -26,12 +26,12 @@ void ns_init() {
  * create_nsproxy() method, and which is decremented by the put_nsproxy() method and incremented by the get_nsproxy() method.
  */
 struct nsproxy* create_nsproxy() {
-    acquire(&nstable.lock);
+    //acquire(&nstable.lock);
     for (int i = 0; i < NNAMESPACE; ++i) {
         if (nstable.nsproxy[i].count == 0) {
             nstable.nsproxy[i].count = 1;
             //TODO: pid & other
-            release(&nstable.lock);
+            //release(&nstable.lock);
             return &(nstable.nsproxy[i]);
         }
     }
@@ -59,6 +59,23 @@ void get_nsproxy(struct nsproxy* nsproxy) {
     release(&nstable.lock);
 }
 
+struct nsproxy*
+namespacedup(struct nsproxy* nsproxy)
+{
+    acquire(&nstable.lock);
+    nsproxy->count++;
+    release(&nstable.lock);
+    return nsproxy;
+}
+
+struct nsproxy*
+namespace_replace_pid_ns(struct nsproxy* oldns, struct pid_namespace* pid_ns)
+{
+    struct nsproxy* nsproxy = create_nsproxy();
+    nsproxy->pid_ns = pid_ns_dup(pid_ns);
+    return nsproxy;
+}
+
 /*
  * unshare allows a process to 'unshare' part of the process
  * context which was originally shared using clone. This system call gets
@@ -78,10 +95,10 @@ int unshare(int flags) {
     put_nsproxy(old_ns);
 
     if ((flags & PID_NS) > 0) {
-        if (p->child_pid_namespace != false || pid_ns_is_max_depth(p->nsproxy->pid_ns)) {
-            return -1;
+        if (p->child_pid_namespace || pid_ns_is_max_depth(p->nsproxy->pid_ns)) {
+            return 0;
         }
         p->child_pid_namespace = pid_ns_new(p->nsproxy->pid_ns);
     }
-    return 0;
+    return 1;
 }

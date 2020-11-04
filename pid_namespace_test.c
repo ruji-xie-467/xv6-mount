@@ -32,13 +32,21 @@ int assert_non_negtive(int r, char *msg) {
   - Verify pid is correct from parent and child views
 */
 int test_simple_pidns() {
-    ASSERT(unshare(PID_NS), "failed to unshare");
+  int unshare_result = unshare(PID_NS);
+    ASSERT(unshare_result, "failed to unshare");
+
     int ret = assert_non_negtive(fork(), "failed to fork");
     // child
     if (ret == 0) {
-        ASSERT(getpid() == 1, "pid not equal to 1");
+        int test_pid = getpid();
+        printf(1, "child pid:%d\n", test_pid);
+        ASSERT(test_pid == 1, "pid not equal to 1");
         exit();
     }
+
+    sleep(10);
+    int test_pid = getpid();
+        printf(1, "parent pid:%d\n", test_pid);
 
     // flaky test because pid can recycle. However strictly speaking pid should be
     // increasing

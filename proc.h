@@ -34,8 +34,14 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+struct pid_entry {
+  struct pid_namespace* pid_ns;
+  int pid;
+};
+
 // Per-process state
 struct proc {
+
   uint sz;                     // Size of process memory (bytes)
   pde_t* pgdir;                // Page table
   char *kstack;                // Bottom of kernel stack for this process
@@ -52,6 +58,7 @@ struct proc {
 
   struct nsproxy *nsproxy;     // Namespace proxy object
   struct pid_namespace *child_pid_namespace; // PID namespace for child procs
+  struct pid_entry pids[4];
 };
 
 // Process memory is laid out contiguously, low addresses first:

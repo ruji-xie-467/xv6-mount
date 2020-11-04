@@ -13,6 +13,7 @@ struct nsproxy {
 //    struct mnt_namespace *mnt_ns;
 //    struct net *net_ns;
 };
+struct nsproxy* namespace_replace_pid_ns(struct nsproxy* oldns, struct pid_namespace* pid_ns);
 
 
 #endif //XV6_510_PROJECT_NAMESPACE_H
