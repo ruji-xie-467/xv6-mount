@@ -41,7 +41,7 @@ int test_simple_pidns() {
         int test_pid = getpid();
         printf(1, "child pid:%d\n", test_pid);
         ASSERT(test_pid == 1, "pid not equal to 1");
-        exit();
+        exit(0);
     }else{// parent
       sleep(10);
       int test_pid = getpid();

@@ -299,12 +299,15 @@ struct proc* get_pid1_for_ns(struct pid_namespace* pid_ns) {
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
 void
-exit(void)
+exit(int exit_state)
 {
   struct proc *curproc = myproc();
   struct proc *p;
   struct pid_namespace *curpidns;
   int fd;
+
+  //set exit state
+  curproc->exit_state = exit_state; 
 
   if(curproc == initproc)
     panic("init exiting");
@@ -322,19 +325,43 @@ exit(void)
   end_op();
   curproc->cwd = 0;
 
+  struct proc* proc_with_pid_1 = 0;
+  // Find process with pid 1 within namespace
+  proc_with_pid_1 = get_pid1_for_ns(curproc->nsproxy->pid_ns);
+
+  // check if we can find the process with pid 1 in target ns
+  if (proc_with_pid_1 == 0 && curproc->nsproxy->pid_ns->is_pid_1_killed == false)
+    panic("can not find process with pid 1 in target namespace");
+  curpidns = curproc->nsproxy->pid_ns;
+
+  // remove namespace
+  put_nsproxy(curproc->nsproxy);
+
   acquire(&ptable.lock);
 
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
 
-  // Pass abandoned children to init.
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->parent == curproc){
-      p->parent = initproc;
-      if(p->state == ZOMBIE)
-        wakeup1(initproc);
+  if (curproc->pid == 1) { // kill all child process if pid is 1 for current process
+    curpidns->is_pid_1_killed = true; // Mark pid 1 process was killed
+
+    kill_all_pid_ns(curproc, curproc->parent, curpidns);
+
+  } else { // The current process does not hold pid 1 within its namespace
+
+    // Pass the child processes of the current process to pid 1 process within the namespace
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->parent == curproc){
+        p->parent = proc_with_pid_1;
+        if(p->state == ZOMBIE) {
+          wakeup1(initproc);
+        }
+      }
     }
   }
+
+  if (curproc->child_pid_namespace)
+    pid_ns_put(curproc->child_pid_namespace);
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;

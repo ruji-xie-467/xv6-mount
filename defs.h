@@ -107,7 +107,7 @@ int             pipewrite(struct pipe*, char*, int);
 //PAGEBREAK: 16
 // proc.c
 int             cpuid(void);
-void            exit(void);
+void            exit(int);
 int             fork(void);
 int             growproc(int);
 int             kill(int);
@@ -195,6 +195,7 @@ void ns_init(void);
 struct nsproxy* create_nsproxy();
 struct nsproxy* namespacedup(struct nsproxy* nsproxy);
 int unshare(int flags);
+void put_nsproxy(struct nsproxy* nsproxy);
 
 // pid_namespace.c
 struct pid_namespace* pid_ns_dup(struct pid_namespace* pid_ns);
@@ -202,6 +203,7 @@ int pid_ns_is_max_depth(struct pid_namespace* pid_ns);
 struct pid_namespace* pid_ns_new(struct pid_namespace* parent_namespace);
 int pid_ns_next_pid(struct pid_namespace* pid_ns);
 struct nsproxy* get_init_nsproxy(void);
+void pid_ns_put(struct pid_namespace* pid_namespace);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

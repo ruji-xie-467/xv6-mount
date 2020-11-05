@@ -58,7 +58,8 @@ struct proc {
 
   struct nsproxy *nsproxy;     // Namespace proxy object
   struct pid_namespace *child_pid_namespace; // PID namespace for child procs
-  struct pid_entry pids[4];
+  struct pid_entry pids[4];    
+  int exit_state;              // Process exit state
 };
 
 // Process memory is laid out contiguously, low addresses first:

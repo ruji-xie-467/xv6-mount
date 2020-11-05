@@ -63,7 +63,8 @@ void put_nsproxy(struct nsproxy* nsproxy) {
     acquire(&nstable.lock);
     nsproxy->count--;
     if (nsproxy->count == 0) {
-        free_nsproxy(nsproxy);
+        pid_ns_put(nsproxy->pid_ns);
+        nsproxy->pid_ns = 0;
     }
     release(&nstable.lock);
 }
