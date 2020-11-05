@@ -36,25 +36,24 @@ int test_simple_pidns() {
     ASSERT(unshare_result, "failed to unshare");
 
     int ret = assert_non_negtive(fork(), "failed to fork");
-    // child
-    if (ret == 0) {
+    
+    if (ret == 0) {// child
         int test_pid = getpid();
         printf(1, "child pid:%d\n", test_pid);
         ASSERT(test_pid == 1, "pid not equal to 1");
         exit();
+    }else{// parent
+      sleep(10);
+      int test_pid = getpid();
+      printf(1, "parent pid:%d\n", test_pid);
+      // flaky test because pid can recycle. However strictly speaking pid should be
+      // increasing
+      ASSERT(getpid() < ret, "wrong pid");
+
+      //    int status = child_exit_status(ret);
+      //    ASSERT(status == 0, "child process failed");
+      return 0;
     }
-
-    sleep(10);
-    int test_pid = getpid();
-        printf(1, "parent pid:%d\n", test_pid);
-
-    // flaky test because pid can recycle. However strictly speaking pid should be
-    // increasing
-    ASSERT(getpid() < ret, "wrong pid");
-
-//    int status = child_exit_status(ret);
-//    ASSERT(status == 0, "child process failed");
-    return 0;
 }
 
 int main() {

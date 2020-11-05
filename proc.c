@@ -258,7 +258,6 @@ fork(void)
 
   np->pid = np->pids[0].pid;
   pid = get_pid_for_ns(np, curproc->nsproxy->pid_ns);
-  pid = np->pid;
 
   acquire(&ptable.lock);
 
@@ -269,6 +268,33 @@ fork(void)
   return pid;
 }
 
+/*Kill the given process p, and set its parent to given process reaper*/
+void kill_proc(struct proc* p, struct proc* new_parent) {
+   p->killed = true;
+   if (p->state == SLEEPING)
+    p->state = RUNNABLE;
+   p->parent = new_parent;
+}
+
+void kill_all_pid_ns(struct proc* curproc, struct proc* new_parent, struct pid_namespace* curpidns) {
+  struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    /*If the process is not the parent, and it is in the same namespace as parent, kill it*/
+    if(p != curproc && p->nsproxy->pid_ns == curpidns) {
+      kill_proc(p, new_parent);
+    }
+  }
+}
+
+struct proc* get_pid1_for_ns(struct pid_namespace* pid_ns) {
+  for (struct proc* p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(get_pid_for_ns(p, pid_ns) == 1){
+      return p;
+    }
+  }
+  return 0;
+}
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
@@ -277,6 +303,7 @@ exit(void)
 {
   struct proc *curproc = myproc();
   struct proc *p;
+  struct pid_namespace *curpidns;
   int fd;
 
   if(curproc == initproc)
