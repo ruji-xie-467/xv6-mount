@@ -38,6 +38,21 @@ struct nsproxy* create_nsproxy() {
     panic("namespace out of max!\n");
 }
 
+struct nsproxy* get_init_nsproxy(void){
+    acquire(&nstable.lock);
+    for (int i = 0; i < NNAMESPACE; ++i) {
+        if (nstable.nsproxy[i].count == 0) {
+            nstable.nsproxy[i].count = 1;
+            //TODO: pid & other
+            nstable.nsproxy[i].pid_ns = pid_ns_new(0);
+
+            release(&nstable.lock);
+            return &(nstable.nsproxy[i]);
+        }
+    }
+    panic("namespace out of max!\n");
+}
+
 void free_nsproxy(struct nsproxy* nsproxy) {
     acquire(&nstable.lock);
     //TODO: pid & other

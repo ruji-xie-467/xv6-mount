@@ -201,6 +201,7 @@ struct pid_namespace* pid_ns_dup(struct pid_namespace* pid_ns);
 int pid_ns_is_max_depth(struct pid_namespace* pid_ns);
 struct pid_namespace* pid_ns_new(struct pid_namespace* parent_namespace);
 int pid_ns_next_pid(struct pid_namespace* pid_ns);
+struct nsproxy* get_init_nsproxy(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

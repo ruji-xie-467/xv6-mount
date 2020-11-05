@@ -31,6 +31,10 @@ int get_pid_for_ns(struct proc* proc, struct pid_namespace* pid_ns) {
   return 0;
 }
 
+int proc_pid(struct proc* proc) {
+    return get_pid_for_ns(proc, myproc()->nsproxy->pid_ns);
+}
+
 void
 pinit(void)
 {
@@ -153,7 +157,13 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
-  p->nsproxy = create_nsproxy();
+  // get a new nsproxy
+  p->nsproxy = get_init_nsproxy();
+  // set pid
+  p->pid = pid_ns_next_pid(p->nsproxy->pid_ns);
+  // set pid namespace
+  p->pids[0].pid = p->pid;
+  p->pids[0].pid_ns = p->nsproxy->pid_ns;
 
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
