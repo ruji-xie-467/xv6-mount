@@ -59,4 +59,5 @@ int test_simple_pidns() {
 int main() {
 //    run_test(test_simple_pidns, "test_simple_pidns");
     test_simple_pidns();
+    exit(0);
 }
