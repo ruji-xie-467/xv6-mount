@@ -587,14 +587,12 @@ kill(int pid)
   struct proc *p;
 
   acquire(&ptable.lock);
+  struct pid_namespace* pid_ns = myproc()->nsproxy->pid_ns;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == pid){
-      p->killed = 1;
-      // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
-        p->state = RUNNABLE;
-      release(&ptable.lock);
-      return 0;
+    if(get_pid_for_ns(p, pid_ns) == pid){
+       kill_proc(p, p->parent);
+       release(&ptable.lock);
+       return 0;
     }
   }
   release(&ptable.lock);
