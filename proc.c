@@ -388,15 +388,18 @@ wait(void)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
-        pid = p->pid;
+        pid = get_pid_for_ns(p, curproc->nsproxy->pid_ns);
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
         p->pid = 0;
+        memset(p->pids, 0, sizeof(p->pids));
+        p->child_pid_namespace = 0;
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+        p->exit_state = 0;
         release(&ptable.lock);
         return pid;
       }
