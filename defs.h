@@ -13,6 +13,10 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+//#define true 1
+//#define false 0
+typedef enum{false,true} bool;
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -198,10 +202,11 @@ int unshare(int flags);
 void put_nsproxy(struct nsproxy* nsproxy);
 
 // pid_namespace.c
-struct pid_namespace* pid_namespace_dup(struct pid_namespace* pid_ns);
-int pid_ns_is_max_depth(struct pid_namespace* pid_ns);
+#define PID_NAMESPACE_MAX_DEPTH 4
+struct pid_namespace* increase_pid_namespace_count(struct pid_namespace* pid_ns);
+bool check_is_pid_namespace_legal(struct pid_namespace* pid_ns);
 struct pid_namespace* create_new_pid_namespace(struct pid_namespace* parent_namespace);
-int pid_namespace_get_next_pid(struct pid_namespace* pid_ns);
+int alloc_new_pid(struct pid_namespace* pid_ns);
 struct nsproxy* get_init_nsproxy(void);
 void remove_from_pid_namespace(struct pid_namespace* pid_namespace);
 void init_pid_namespaces(void);
@@ -209,8 +214,5 @@ void init_pid_namespaces(void);
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
 #define NULL 0
-//#define true 1
-//#define false 0
-typedef enum{false,true} bool;
 
 #endif

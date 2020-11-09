@@ -160,7 +160,7 @@ userinit(void)
   // get a new nsproxy
   p->nsproxy = get_init_nsproxy();
   // set pid
-  p->pid = pid_namespace_get_next_pid(p->nsproxy->pid_ns);
+  p->pid = alloc_new_pid(p->nsproxy->pid_ns);
   // set pid namespace
   p->pids[0].pid = p->pid;
   p->pids[0].pid_ns = p->nsproxy->pid_ns;
@@ -250,7 +250,7 @@ fork(void)
       panic("too many danif!");
     }
 
-    np->pids[i].pid = pid_namespace_get_next_pid(cur);
+    np->pids[i].pid = alloc_new_pid(cur);
     np->pids[i].pid_ns = cur;
     i++;
     cur = cur->parent;
