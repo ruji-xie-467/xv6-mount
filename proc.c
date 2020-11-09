@@ -160,7 +160,7 @@ userinit(void)
   // get a new nsproxy
   p->nsproxy = get_init_nsproxy();
   // set pid
-  p->pid = pid_ns_next_pid(p->nsproxy->pid_ns);
+  p->pid = pid_namespace_get_next_pid(p->nsproxy->pid_ns);
   // set pid namespace
   p->pids[0].pid = p->pid;
   p->pids[0].pid_ns = p->nsproxy->pid_ns;
@@ -250,7 +250,7 @@ fork(void)
       panic("too many danif!");
     }
 
-    np->pids[i].pid = pid_ns_next_pid(cur);
+    np->pids[i].pid = pid_namespace_get_next_pid(cur);
     np->pids[i].pid_ns = cur;
     i++;
     cur = cur->parent;
@@ -361,7 +361,7 @@ exit(int exit_state)
   }
 
   if (curproc->child_pid_namespace)
-    pid_ns_put(curproc->child_pid_namespace);
+    remove_from_pid_namespace(curproc->child_pid_namespace);
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;

@@ -200,10 +200,11 @@ void put_nsproxy(struct nsproxy* nsproxy);
 // pid_namespace.c
 struct pid_namespace* pid_ns_dup(struct pid_namespace* pid_ns);
 int pid_ns_is_max_depth(struct pid_namespace* pid_ns);
-struct pid_namespace* pid_ns_new(struct pid_namespace* parent_namespace);
-int pid_ns_next_pid(struct pid_namespace* pid_ns);
+struct pid_namespace* create_new_pid_namespace(struct pid_namespace* parent_namespace);
+int pid_namespace_get_next_pid(struct pid_namespace* pid_ns);
 struct nsproxy* get_init_nsproxy(void);
-void pid_ns_put(struct pid_namespace* pid_namespace);
+void remove_from_pid_namespace(struct pid_namespace* pid_namespace);
+void init_pid_namespaces(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

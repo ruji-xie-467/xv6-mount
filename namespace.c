@@ -19,6 +19,8 @@ struct {
 
 void ns_init() {
     initlock(&nstable.lock, "nstable");
+    //init pid_namepsace
+    init_pid_namespaces();
 }
 
 /*
@@ -44,7 +46,7 @@ struct nsproxy* get_init_nsproxy(void){
         if (nstable.nsproxy[i].count == 0) {
             nstable.nsproxy[i].count = 1;
             //TODO: pid & other
-            nstable.nsproxy[i].pid_ns = pid_ns_new(0);
+            nstable.nsproxy[i].pid_ns = create_new_pid_namespace(0);
 
             release(&nstable.lock);
             return &(nstable.nsproxy[i]);
@@ -63,7 +65,7 @@ void put_nsproxy(struct nsproxy* nsproxy) {
     acquire(&nstable.lock);
     nsproxy->count--;
     if (nsproxy->count == 0) {
-        pid_ns_put(nsproxy->pid_ns);
+        remove_from_pid_namespace(nsproxy->pid_ns);
         nsproxy->pid_ns = 0;
     }
     release(&nstable.lock);
@@ -114,7 +116,7 @@ int unshare(int flags) {
         if (p->child_pid_namespace || pid_ns_is_max_depth(p->nsproxy->pid_ns)) {
             return 0;
         }
-        p->child_pid_namespace = pid_ns_new(p->nsproxy->pid_ns);
+        p->child_pid_namespace = create_new_pid_namespace(p->nsproxy->pid_ns);
     }
     return 1;
 }
