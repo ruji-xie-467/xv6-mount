@@ -84,14 +84,14 @@ struct pid_namespace* create_new_pid_namespace(struct pid_namespace* parent_name
     panic("all pid_namespaces are occupied");
 }
 
-struct pid_namespace* pid_ns_dup(struct pid_namespace* pid_ns) {
+struct pid_namespace* pid_namespace_dup(struct pid_namespace* pid_namespace) {
     //get lock first to reduce race condition
     acquire(&pid_ns_table.lock);
     //increase namespaces count by 1
-    pid_ns->count++;
+    pid_namespace->count++;
     //release lock
     release(&pid_ns_table.lock);
-    return pid_ns;
+    return pid_namespace;
 }
 
 int pid_namespace_get_next_pid(struct pid_namespace* pid_ns) {

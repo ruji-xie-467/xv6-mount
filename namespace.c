@@ -90,7 +90,7 @@ struct nsproxy*
 namespace_replace_pid_ns(struct nsproxy* oldns, struct pid_namespace* pid_ns)
 {
     struct nsproxy* nsproxy = create_nsproxy();
-    nsproxy->pid_ns = pid_ns_dup(pid_ns);
+    nsproxy->pid_ns = pid_namespace_dup(pid_ns);
     return nsproxy;
 }
 
@@ -107,7 +107,7 @@ int unshare(int flags) {
         panic("assert fails. namespace.c: 75\n"); // is there any situation that count <= 1 when unshare? (not sure)
     }
     p->nsproxy = create_nsproxy();  // should have a different ns now
-    p->nsproxy->pid_ns = pid_ns_dup(old_ns->pid_ns);
+    p->nsproxy->pid_ns = pid_namespace_dup(old_ns->pid_ns);
     release(&nstable.lock);
 
     put_nsproxy(old_ns);

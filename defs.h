@@ -198,7 +198,7 @@ int unshare(int flags);
 void put_nsproxy(struct nsproxy* nsproxy);
 
 // pid_namespace.c
-struct pid_namespace* pid_ns_dup(struct pid_namespace* pid_ns);
+struct pid_namespace* pid_namespace_dup(struct pid_namespace* pid_ns);
 int pid_ns_is_max_depth(struct pid_namespace* pid_ns);
 struct pid_namespace* create_new_pid_namespace(struct pid_namespace* parent_namespace);
 int pid_namespace_get_next_pid(struct pid_namespace* pid_ns);
