@@ -1,9 +1,16 @@
 //
 // Created by Tianle Zhang on 2020/10/22.
 //
+#include "types.h"
+#include "spinlock.h"
+#include "param.h"
 
 #ifndef XV6_510_PROJECT_NAMESPACE_H
 #define XV6_510_PROJECT_NAMESPACE_H
+
+#endif //XV6_510_PROJECT_NAMESPACE_H
+
+typedef struct nsproxy nsproxy_struct;
 
 struct nsproxy {
     int count;
@@ -13,7 +20,11 @@ struct nsproxy {
 //    struct mnt_namespace *mnt_ns;
 //    struct net *net_ns;
 };
-struct nsproxy* namespace_replace_pid_ns(struct nsproxy* oldns, struct pid_namespace* pid_ns);
+
+struct {
+    struct spinlock lock;
+    struct nsproxy nsproxy[NNAMESPACE];
+} nstable;
 
 
-#endif //XV6_510_PROJECT_NAMESPACE_H
+

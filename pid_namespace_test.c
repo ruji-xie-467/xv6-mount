@@ -22,6 +22,7 @@ int assert_non_negtive(int r, char *msg) {
       printf(1, "assert fails: ");
       printf(1, msg);
       printf(1, "\n");
+      exit(1);
   }
   return r;
 }
@@ -33,7 +34,7 @@ int assert_non_negtive(int r, char *msg) {
 */
 int test_simple_pidns() {
   int unshare_result = unshare(PID_NS);
-    ASSERT(unshare_result, "failed to unshare");
+    assert_non_negtive(unshare_result, "failed to unshare");
 
     int ret = assert_non_negtive(fork(), "failed to fork");
     

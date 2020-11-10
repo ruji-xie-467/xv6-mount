@@ -193,23 +193,22 @@ void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 
-// namespace.c
-#define PID_NS 0b00000001
-void ns_init(void);
-struct nsproxy* create_nsproxy();
-struct nsproxy* namespacedup(struct nsproxy* nsproxy);
-int unshare(int flags);
-void put_nsproxy(struct nsproxy* nsproxy);
-
 // pid_namespace.c
 #define PID_NAMESPACE_MAX_DEPTH 4
 struct pid_namespace* increase_pid_namespace_count(struct pid_namespace* pid_ns);
 bool check_is_pid_namespace_legal(struct pid_namespace* pid_ns);
 struct pid_namespace* create_new_pid_namespace(struct pid_namespace* parent_namespace);
 int alloc_new_pid(struct pid_namespace* pid_ns);
-struct nsproxy* get_init_nsproxy(void);
 void remove_from_pid_namespace(struct pid_namespace* pid_namespace);
 void init_pid_namespaces(void);
+
+// namespace.c
+#define PID_NS 0b00000001
+void ns_init(void);
+struct nsproxy* create_nsproxy(struct pid_namespace * pid_namespace, bool is_lock_required);
+struct nsproxy* increase_nsproxy_count(struct nsproxy* nsproxy);
+int unshare(int flags);
+void put_nsproxy(struct nsproxy* nsproxy);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

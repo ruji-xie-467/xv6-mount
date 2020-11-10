@@ -3,19 +3,11 @@
 //
 
 #include "namespace.h"
-#include "types.h"
 #include "defs.h"
-#include "param.h"
 #include "memlayout.h"
-#include "mmu.h"
 #include "x86.h"
+#include "mmu.h"
 #include "proc.h"
-#include "spinlock.h"
-
-struct {
-    struct spinlock lock;
-    struct nsproxy nsproxy[NNAMESPACE];
-} nstable;
 
 void ns_init() {
     initlock(&nstable.lock, "nstable");
@@ -27,70 +19,57 @@ void ns_init() {
  * The nsproxy count member is a reference counter, which is initialized to 1 when the nsproxy object is created by the
  * create_nsproxy() method, and which is decremented by the put_nsproxy() method and incremented by the get_nsproxy() method.
  */
-struct nsproxy* create_nsproxy() {
-    //acquire(&nstable.lock);
+nsproxy_struct* create_nsproxy(struct pid_namespace * pid_namespace, bool is_lock_required) {
+    if(is_lock_required){
+        acquire(&nstable.lock);
+    }
+
     for (int i = 0; i < NNAMESPACE; ++i) {
+        //find an empty entry fom nstable
         if (nstable.nsproxy[i].count == 0) {
             nstable.nsproxy[i].count = 1;
-            //TODO: pid & other
-            //release(&nstable.lock);
+
+            //init pid_namespace
+            if(pid_namespace == NULL){
+                nstable.nsproxy[i].pid_ns = create_new_pid_namespace(NULL);
+            }else{
+                nstable.nsproxy[i].pid_ns = increase_pid_namespace_count(pid_namespace);
+            }
+            
+            if(is_lock_required){
+                release(&nstable.lock);
+            }
+
             return &(nstable.nsproxy[i]);
         }
     }
     panic("namespace out of max!\n");
 }
 
-struct nsproxy* get_init_nsproxy(void){
-    acquire(&nstable.lock);
-    for (int i = 0; i < NNAMESPACE; ++i) {
-        if (nstable.nsproxy[i].count == 0) {
-            nstable.nsproxy[i].count = 1;
-            //TODO: pid & other
-            nstable.nsproxy[i].pid_ns = create_new_pid_namespace(0);
-
-            release(&nstable.lock);
-            return &(nstable.nsproxy[i]);
-        }
-    }
-    panic("namespace out of max!\n");
-}
-
-void free_nsproxy(struct nsproxy* nsproxy) {
+void free_nsproxy(nsproxy_struct* nsproxy) {
     acquire(&nstable.lock);
     //TODO: pid & other
     release(&nstable.lock);
 }
 
-void put_nsproxy(struct nsproxy* nsproxy) {
+void put_nsproxy(nsproxy_struct* nsproxy) {
     acquire(&nstable.lock);
     nsproxy->count--;
     if (nsproxy->count == 0) {
         remove_from_pid_namespace(nsproxy->pid_ns);
-        nsproxy->pid_ns = 0;
+        nsproxy->pid_ns = NULL;
     }
     release(&nstable.lock);
 }
 
-void get_nsproxy(struct nsproxy* nsproxy) {
+void get_nsproxy(nsproxy_struct* nsproxy) {
     acquire(&nstable.lock);
     nsproxy->count++;
     release(&nstable.lock);
 }
 
-struct nsproxy*
-namespacedup(struct nsproxy* nsproxy)
-{
-    acquire(&nstable.lock);
-    nsproxy->count++;
-    release(&nstable.lock);
-    return nsproxy;
-}
-
-struct nsproxy*
-namespace_replace_pid_ns(struct nsproxy* oldns, struct pid_namespace* pid_ns)
-{
-    struct nsproxy* nsproxy = create_nsproxy();
-    nsproxy->pid_ns = increase_pid_namespace_count(pid_ns);
+nsproxy_struct* increase_nsproxy_count(nsproxy_struct* nsproxy){
+    get_nsproxy(nsproxy);
     return nsproxy;
 }
 
@@ -102,21 +81,30 @@ namespace_replace_pid_ns(struct nsproxy* oldns, struct pid_namespace* pid_ns)
 int unshare(int flags) {
     acquire(&nstable.lock);
     struct proc* p = myproc();
-    struct nsproxy* old_ns = p->nsproxy;
+    nsproxy_struct* old_ns = p->nsproxy;
     if (!(old_ns->count > 1)) {
         panic("assert fails. namespace.c: 75\n"); // is there any situation that count <= 1 when unshare? (not sure)
     }
-    p->nsproxy = create_nsproxy();  // should have a different ns now
-    p->nsproxy->pid_ns = increase_pid_namespace_count(old_ns->pid_ns);
+    p->nsproxy = create_nsproxy(old_ns->pid_ns, false);  // should have a different ns now
     release(&nstable.lock);
 
     put_nsproxy(old_ns);
 
     if ((flags & PID_NS) > 0) {
-        if (p->child_pid_namespace || !check_is_pid_namespace_legal(p->nsproxy->pid_ns)) {
-            return 0;
+        //check if already unshared
+        if(p->child_pid_namespace){
+            panic("pid_namespace already unshared");
+            return -1;
         }
+
+        //check if enough depth available
+        if (!check_is_pid_namespace_legal(p->nsproxy->pid_ns)) {
+            panic("no depth available for new child pid_namespace");
+            return -1;
+        }
+
+        //create new child namespace
         p->child_pid_namespace = create_new_pid_namespace(p->nsproxy->pid_ns);
     }
-    return 1;
+    return 0;
 }
