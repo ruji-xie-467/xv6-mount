@@ -10,6 +10,7 @@ OBJS = \
 	kbd.o\
 	lapic.o\
 	log.o\
+	loopdev.o\
 	main.o\
 	mp.o\
 	picirq.o\
@@ -21,6 +22,7 @@ OBJS = \
 	swtch.o\
 	syscall.o\
 	sysfile.o\
+	sysmount.o\
 	sysproc.o\
 	trapasm.o\
 	trap.o\
@@ -76,7 +78,7 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -Og -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
@@ -175,15 +177,20 @@ UPROGS=\
 	_ln\
 	_ls\
 	_mkdir\
+	_mount\
 	_rm\
 	_sh\
 	_stressfs\
+	_umount\
 	_usertests\
 	_wc\
 	_zombie\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+loopdev.img: mkfs README
+	./mkfs 1 loopdev.img README
+
+fs.img: mkfs README $(UPROGS) loopdev.img
+	./mkfs 0 fs.img README $(UPROGS) loopdev.img
 
 -include *.d
 
@@ -191,7 +198,7 @@ clean:
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*.o *.d *.asm *.sym vectors.S bootblock entryother \
 	initcode initcode.out kernel xv6.img fs.img kernelmemfs \
-	xv6memfs.img mkfs .gdbinit \
+	xv6memfs.img loopdev.img mkfs .gdbinit \
 	$(UPROGS)
 
 # make a printout
@@ -249,8 +256,8 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
-	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c umalloc.c\
+	ln.c ls.c mkdir.c mount.c rm.c stressfs.c usertests.c wc.c zombie.c\
+	printf.c umalloc.c umount.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

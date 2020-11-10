@@ -87,6 +87,15 @@ void            log_write(struct buf*);
 void            begin_op();
 void            end_op();
 
+// loopdev.c
+int isloopdev(uint devno);
+uint getorcreatedev(struct inode * ip);
+struct inode * getlloopdevi(uint devno);
+struct buf* loopdev_read(struct buf* b);
+void loopdev_write(struct buf* b);
+void devput(uint devno);
+void loopdevinit(void);
+
 // mp.c
 extern int      ismp;
 void            mpinit(void);
@@ -155,6 +164,13 @@ int             argstr(int, char**);
 int             fetchint(uint, int*);
 int             fetchstr(uint, char**);
 void            syscall(void);
+
+// sysmount.c
+void mountinit(void);
+struct mntent * mntdup(struct mntent * mntent);
+void mntput(struct mntent * mntent);
+struct mntent * mntlookup(struct inode * ip);
+struct inode * getmntpnt(uint devno);
 
 // timer.c
 void            timerinit(void);

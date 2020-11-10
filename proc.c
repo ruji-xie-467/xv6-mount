@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "sysmount.h"
 
 struct {
   struct spinlock lock;
@@ -140,6 +141,7 @@ userinit(void)
   p->tf->eip = 0;  // beginning of initcode.S
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
+  // p->cwdmnt = gmnt.prootmnt;
   p->cwd = namei("/");
 
   // this assignment to p->state lets other cores
@@ -207,6 +209,7 @@ fork(void)
     if(curproc->ofile[i])
       np->ofile[i] = filedup(curproc->ofile[i]);
   np->cwd = idup(curproc->cwd);
+  // np->cwdmnt = mntdup(curproc->cwdmnt);
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
@@ -246,6 +249,9 @@ exit(void)
   iput(curproc->cwd);
   end_op();
   curproc->cwd = 0;
+  
+  // mntput(curproc->cwdmnt);
+  // curproc->cwdmnt = 0;
 
   acquire(&ptable.lock);
 

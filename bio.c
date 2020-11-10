@@ -100,7 +100,11 @@ bread(uint dev, uint blockno)
 
   b = bget(dev, blockno);
   if((b->flags & B_VALID) == 0) {
-    iderw(b);
+    if (isloopdev(dev)) {
+      loopdev_read(b);
+    } else {
+      iderw(b);
+    }
   }
   return b;
 }
@@ -112,7 +116,11 @@ bwrite(struct buf *b)
   if(!holdingsleep(&b->lock))
     panic("bwrite");
   b->flags |= B_DIRTY;
-  iderw(b);
+  if (isloopdev(b->dev)) {
+    loopdev_write(b);
+  } else {
+    iderw(b);
+  }
 }
 
 // Release a locked buffer.
