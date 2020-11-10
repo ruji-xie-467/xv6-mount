@@ -44,15 +44,10 @@ int test_simple_pidns() {
         ASSERT(test_pid == 1, "pid not equal to 1");
         exit(0);
     }else{// parent
-      sleep(10);
+      //wait for child process to finish
+      wait();
       int test_pid = getpid();
       printf(1, "parent pid:%d\n", test_pid);
-      // flaky test because pid can recycle. However strictly speaking pid should be
-      // increasing
-      //ASSERT(getpid() < ret, "wrong pid");
-
-      //    int status = child_exit_status(ret);
-      //    ASSERT(status == 0, "child process failed");
       return 0;
     }
 }
