@@ -83,7 +83,7 @@ int unshare(int flags) {
     struct proc* p = myproc();
     nsproxy_struct* old_ns = p->nsproxy;
     if (!(old_ns->count > 1)) {
-        panic("assert fails. namespace.c: 75\n"); // is there any situation that count <= 1 when unshare? (not sure)
+        panic("assert fails. namespace.c: 86\n"); // is there any situation that count <= 1 when unshare? (not sure)
     }
     p->nsproxy = create_nsproxy(old_ns->pid_ns, false);  // should have a different ns now
     release(&nstable.lock);
