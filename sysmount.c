@@ -101,15 +101,17 @@ int sys_mount(void) {
   struct mntent * newmntent = mntalloc();
 
   newmntent->devno = devno;
-  newmntent->mnti = mnti;
+  newmntent->mnti = idup(mnti);
 
   // add to pmnt list
   newmntent->next = gmnt.pmntlist;
   gmnt.pmntlist = newmntent;
 
   mntput(newmntent);
-  iunlock(mnti); // newmntent holds a reference
-  iunlock(devi);
+  iunlockput(mnti); // newmntent holds a reference
+  iunlockput(devi);
+  // iunlock(mnti); // newmntent holds a reference
+  // iunlock(devi);
   end_op();
   return 0;
 
@@ -201,8 +203,11 @@ int sys_umount(void) {
   cur->next = 0;
   cur->refcnt = 0;
 
-
+  struct inode * devi = getlloopdevi(cur->devno);
+  iput(devi);
   iput(mnti);
+  cprintf("devi->ref: %d\n", devi->ref);
+  cprintf("mnti->ref: %d\n", mnti->ref);
   end_op();
   return 0;
 

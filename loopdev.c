@@ -50,7 +50,7 @@ uint getorcreatedev(struct inode * ip) {
   freeloopdev->used = 1;
   release(&gloopdev.lock);
 
-  freeloopdev->ip = ip;
+  freeloopdev->ip = idup(ip);
   return freeloopdevno | LOOPDEV_MASK;
 }
 
@@ -68,7 +68,9 @@ struct buf* loopdev_read(struct buf* b) {
   uint devno = b->dev; 
   uint blockno = b->blockno;
   struct inode * ip = getlloopdevi(devno);
+  ilock(ip);
   int res = readi(ip, (char*) b->data, blockno * BSIZE, BSIZE);
+  iunlock(ip);
   if (res != BSIZE) {
     cprintf("res: %d \n", res);
     // panic("[loopdev_read] loopdev_read didn't read a whole block");
