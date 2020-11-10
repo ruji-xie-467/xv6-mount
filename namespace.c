@@ -82,7 +82,7 @@ int unshare(int flags) {
     acquire(&nstable.lock);
     struct proc* p = myproc();
     nsproxy_struct* old_ns = p->nsproxy;
-    if (!(old_ns->count > 1)) {
+    if (old_ns->count < 1) {
         panic("assert fails. namespace.c: 86\n"); // is there any situation that count <= 1 when unshare? (not sure)
     }
     p->nsproxy = create_nsproxy(old_ns->pid_ns, false);  // should have a different ns now
@@ -93,13 +93,13 @@ int unshare(int flags) {
     if ((flags & PID_NS) > 0) {
         //check if already unshared
         if(p->child_pid_namespace){
-            panic("pid_namespace already unshared");
+            panic("pid_namespace already unshared\n");
             return -1;
         }
 
         //check if enough depth available
         if (!check_is_pid_namespace_legal(p->nsproxy->pid_ns)) {
-            panic("no depth available for new child pid_namespace");
+            panic("no depth available for new child pid_namespace\n");
             return -1;
         }
 

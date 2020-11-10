@@ -37,7 +37,7 @@ int assert_true(int r, char *msg) {
   return r;
 }
 
-// Verify that after unshare, the first child process should have pid 1 in new pid_namespace
+//Verify that after unshare, the first child process should have pid 1 in new pid_namespace
 int test_proc_in_new_pid_namesapce_with_pid_1() {
   printf(1, "------------test1------------\n");
   int unshare_result = unshare(PID_NS);
@@ -47,7 +47,7 @@ int test_proc_in_new_pid_namesapce_with_pid_1() {
   if (ret == 0) {// child
     int test_pid = getpid();
     printf(1, "child pid:%d\n", test_pid);
-    assert_true(test_pid == 2, "pid not equal to 1");
+    assert_true(test_pid == 1, "pid not equal to 1");
     exit(0);
   }else{// parent
     //wait for child process to finish
@@ -151,6 +151,65 @@ int test_reap_orphaned_children(){
   }
 }
 
+//Verify that all children process should be killed when process with pid1 is killed
+int test_all_proc_killed_after_pid1_killed(){
+  printf(1, "------------test3------------\n");
+
+  int unshare_result = unshare(PID_NS);
+  assert_non_negtive(unshare_result, "failed to unshare\n");
+
+  //create child 1
+  int ret = assert_non_negtive(fork(), "failed to fork\n");
+  if (ret == 0) {// child1
+    //amount of child2's children
+    int child_num = 2;
+
+    //create child 2 in new pid_namespace
+    int unshare_result = unshare(PID_NS);
+    assert_non_negtive(unshare_result, "failed to unshare\n");
+    int ret2 = assert_non_negtive(fork(), "failed to fork\n");
+    if(ret2 == 0){//child2
+      //assert child2's pid equal to 1
+      assert_true(getpid() == 1, "child2 pid not equal to 1");
+
+      //create child3 and child4
+      for(int i = 0; i < child_num; ++i){
+        int ret = assert_non_negtive(fork(), "failed to fork\n");
+        if(ret == 0){
+          //normally child3 and child4 shuold never exit, unless child2 exits, then child3 and child4 should auto exit
+          while(1){}
+          exit(0);
+        }
+      }
+
+      //child2 exit
+      exit(0);
+    }else{
+      //wait for child2 to exit
+      int child2_pid = wait();
+
+      //wait for child3 and child4 exit()
+      int count = 0;
+      for(int i = 0; i < child_num; ++i){
+        int child_pid = wait();
+        printf(1, "child%d is auto killed after child%d(with pid 1) is killed\n", child_pid, child2_pid);
+        count++;
+      }
+      //assert all orphaned children are killed
+      assert_true(count == 2, "not all orphaned children are killed");
+
+      //child1 exit
+      exit(0);
+    }
+  }else{// parent
+    //wait for child1 to exit
+    wait();
+    printf(1, "test3 pass\n");
+    printf(1, "------------------------------\n");
+    return 0;
+  }
+}
+
 int main() {
   int ret = -1;
 
@@ -166,6 +225,14 @@ int main() {
   ret = fork();
   if(ret == 0){
     test_reap_orphaned_children();
+    exit(0);
+  }
+  wait();
+
+  //run test3
+  ret = fork();
+  if(ret == 0){
+    test_all_proc_killed_after_pid1_killed();
     exit(0);
   }
   wait();
