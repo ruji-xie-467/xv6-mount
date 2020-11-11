@@ -7,8 +7,6 @@
 
 
 
-typedef struct pid_namespace pid_namespace_struct;
-
 struct pid_namespace {
     int count;
     struct pid_namespace* parent;

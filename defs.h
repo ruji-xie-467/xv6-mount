@@ -196,21 +196,22 @@ int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 
 // pid_namespace.c
+typedef struct pid_namespace pid_namespace_struct;
 #define PID_NAMESPACE_MAX_DEPTH 4
-struct pid_namespace* increase_pid_namespace_count(struct pid_namespace* pid_ns);
-bool check_is_pid_namespace_legal(struct pid_namespace* pid_ns);
-struct pid_namespace* create_new_pid_namespace(struct pid_namespace* parent_namespace);
-int alloc_new_pid(struct pid_namespace* pid_ns);
-void remove_from_pid_namespace(struct pid_namespace* pid_namespace);
+pid_namespace_struct* increase_pid_namespace_count(pid_namespace_struct* pid_ns);
+bool check_is_pid_namespace_legal(pid_namespace_struct* pid_ns);
+pid_namespace_struct* create_new_pid_namespace(pid_namespace_struct* parent_namespace);
+int alloc_new_pid(pid_namespace_struct* pid_ns);
+void remove_from_pid_namespace(pid_namespace_struct* pid_namespace);
 void init_pid_namespaces(void);
 
 // namespace.c
 #define PID_NS 0b00000001
 void ns_init(void);
-nsproxy_struct* create_nsproxy(struct pid_namespace * pid_namespace, bool is_lock_required);
+nsproxy_struct* create_nsproxy(pid_namespace_struct * pid_namespace, bool is_lock_required);
 void get_nsproxy(nsproxy_struct* nsproxy);
 int unshare(int flags);
-void put_nsproxy(struct nsproxy* nsproxy);
+void put_nsproxy(nsproxy_struct* nsproxy);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

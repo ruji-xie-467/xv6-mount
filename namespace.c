@@ -19,7 +19,7 @@ void ns_init() {
  * The nsproxy count member is a reference counter, which is initialized to 1 when the nsproxy object is created by the
  * create_nsproxy() method, and which is decremented by the put_nsproxy() method and incremented by the get_nsproxy() method.
  */
-nsproxy_struct* create_nsproxy(struct pid_namespace * pid_namespace, bool is_lock_required) {
+nsproxy_struct* create_nsproxy(pid_namespace_struct * pid_namespace, bool is_lock_required) {
     if(is_lock_required){
         acquire(&nstable.lock);
     }

@@ -1,3 +1,4 @@
+#include "defs.h"
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -35,7 +36,7 @@ struct context {
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 struct pid_entry {
-  struct pid_namespace* pid_ns;
+  pid_namespace_struct* pid_ns;
   int pid;
 };
 
@@ -56,8 +57,8 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 
-  struct nsproxy *nsproxy;     // Namespace proxy object
-  struct pid_namespace *child_pid_namespace; // PID namespace for child procs
+  nsproxy_struct *nsproxy;     // Namespace proxy object
+  pid_namespace_struct *child_pid_namespace; // PID namespace for child procs
   struct pid_entry pids[4];    
   int exit_state;              // Process exit state
 };

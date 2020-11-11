@@ -21,10 +21,10 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
-int get_namespace_pid(struct proc* proc, struct pid_namespace* pid_namespace) {
+int get_namespace_pid(struct proc* proc, pid_namespace_struct* pid_namespace) {
   int i = 0;
   while(i < PID_NAMESPACE_MAX_DEPTH){
-    struct pid_namespace* ns = proc->pids[i].pid_ns;
+    pid_namespace_struct* ns = proc->pids[i].pid_ns;
     if(ns == pid_namespace){
       //return pid
       return proc->pids[i].pid;
@@ -205,9 +205,9 @@ growproc(int n)
   return 0;
 }
 
-struct pid_namespace* set_up_child_pid_namespace(struct proc * cur_process, struct proc * new_process){
+pid_namespace_struct* set_up_child_pid_namespace(struct proc * cur_process, struct proc * new_process){
   //get child_pid_namespace
-  struct pid_namespace* child_pid_namespace = cur_process->child_pid_namespace;
+  pid_namespace_struct* child_pid_namespace = cur_process->child_pid_namespace;
 
   //set child_pid_namespace
   if (child_pid_namespace) {// if we've prepared a new child_pid_namespace in current process
@@ -223,7 +223,7 @@ struct pid_namespace* set_up_child_pid_namespace(struct proc * cur_process, stru
   return child_pid_namespace;
 }
 
-void set_up_pids(struct proc * proc, struct pid_namespace* pid_namespace){
+void set_up_pids(struct proc * proc, pid_namespace_struct* pid_namespace){
   for(int i = 0; i < PID_NAMESPACE_MAX_DEPTH; ++i){
     //set up pids array
     proc->pids[i].pid = alloc_new_pid(pid_namespace);
@@ -280,7 +280,7 @@ fork(void)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
   //set up child_pid_namespace
-  struct pid_namespace* child_pid_namespace = set_up_child_pid_namespace(curproc, np);
+  pid_namespace_struct* child_pid_namespace = set_up_child_pid_namespace(curproc, np);
 
   // set up pid arrays for new process
   set_up_pids(np, child_pid_namespace);
@@ -317,7 +317,7 @@ exit(int exit_state)
 {
   struct proc *curproc = myproc();
   struct proc *p;
-  struct pid_namespace *cur_pid_namespace;
+  pid_namespace_struct *cur_pid_namespace;
   int fd;
 
   //set exit state
@@ -611,7 +611,7 @@ kill(int pid)
   struct proc *p;
 
   acquire(&ptable.lock);
-  struct pid_namespace* pid_ns = myproc()->nsproxy->pid_ns;
+  pid_namespace_struct* pid_ns = myproc()->nsproxy->pid_ns;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(get_namespace_pid(p, pid_ns) == pid){
        kill_process(p, p->parent);
