@@ -68,11 +68,6 @@ void get_nsproxy(nsproxy_struct* nsproxy) {
     release(&nstable.lock);
 }
 
-nsproxy_struct* increase_nsproxy_count(nsproxy_struct* nsproxy){
-    get_nsproxy(nsproxy);
-    return nsproxy;
-}
-
 /*
  * unshare allows a process to 'unshare' part of the process
  * context which was originally shared using clone. This system call gets

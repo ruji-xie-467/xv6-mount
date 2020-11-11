@@ -215,7 +215,8 @@ struct pid_namespace* set_up_child_pid_namespace(struct proc * cur_process, stru
     new_process->nsproxy = create_nsproxy(child_pid_namespace, true);
   } else {// if we've not prepared a new child_pid_namespace in current process
     //use old pid_namespace
-    new_process->nsproxy = increase_nsproxy_count(cur_process->nsproxy);
+    get_nsproxy(cur_process->nsproxy);
+    new_process->nsproxy = cur_process->nsproxy;
     child_pid_namespace = new_process->nsproxy->pid_ns;
   }
 

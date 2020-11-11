@@ -5,7 +5,7 @@
 #ifndef XV6_510_PROJECT_PID_NAMESPACE_H
 #define XV6_510_PROJECT_PID_NAMESPACE_H
 
-#endif //XV6_510_PROJECT_PID_NAMESPACE_H
+
 
 typedef struct pid_namespace pid_namespace_struct;
 
@@ -22,3 +22,5 @@ struct {
     struct spinlock lock;
     pid_namespace_struct pid_namespaces[NNAMESPACE];
 } pid_ns_table;
+
+#endif //XV6_510_PROJECT_PID_NAMESPACE_H

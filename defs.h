@@ -1,6 +1,8 @@
 #ifndef XV6_DEF_H
 #define XV6_DEF_H
 
+#include "namespace.h"
+
 struct buf;
 struct context;
 struct file;
@@ -205,8 +207,8 @@ void init_pid_namespaces(void);
 // namespace.c
 #define PID_NS 0b00000001
 void ns_init(void);
-struct nsproxy* create_nsproxy(struct pid_namespace * pid_namespace, bool is_lock_required);
-struct nsproxy* increase_nsproxy_count(struct nsproxy* nsproxy);
+nsproxy_struct* create_nsproxy(struct pid_namespace * pid_namespace, bool is_lock_required);
+void get_nsproxy(nsproxy_struct* nsproxy);
 int unshare(int flags);
 void put_nsproxy(struct nsproxy* nsproxy);
 
