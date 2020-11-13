@@ -37,7 +37,6 @@ main(void)
   mountinit();     // init global mount data structure
   userinit();      // first user process
   mpmain();        // finish this processor's setup
-   
 }
 
 // Other CPUs jump here from entryother.S.
