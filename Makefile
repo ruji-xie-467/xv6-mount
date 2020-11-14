@@ -78,7 +78,7 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -Og -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O0 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
@@ -186,11 +186,11 @@ UPROGS=\
 	_wc\
 	_zombie\
 
-loopdev.img: mkfs README
-	./mkfs 1 loopdev.img README
+l.img: mkfs README
+	./mkfs 1 l.img README
 
-fs.img: mkfs README $(UPROGS) loopdev.img
-	./mkfs 0 fs.img README $(UPROGS) loopdev.img
+fs.img: mkfs README $(UPROGS) l.img
+	./mkfs 0 fs.img README $(UPROGS) l.img
 
 -include *.d
 
@@ -198,7 +198,7 @@ clean:
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*.o *.d *.asm *.sym vectors.S bootblock entryother \
 	initcode initcode.out kernel xv6.img fs.img kernelmemfs \
-	xv6memfs.img loopdev.img mkfs .gdbinit \
+	xv6memfs.img l.img mkfs .gdbinit \
 	$(UPROGS)
 
 # make a printout

@@ -67,10 +67,11 @@ int
 main(int argc, char *argv[])
 {
   int i, cc, fd;
-  uint rootino, inum, off;
+  uint rootino, inum;
+//  uint off;
   struct dirent de;
   char buf[BSIZE];
-  struct dinode din;
+//  struct dinode din;
 
 
   static_assert(sizeof(int) == 4, "Integers must be 4 bytes!");
@@ -158,12 +159,12 @@ main(int argc, char *argv[])
     close(fd);
   }
 
-  // fix size of root inode dir
-  rinode(rootino, &din);
-  off = xint(din.size);
-  off = ((off/BSIZE) + 1) * BSIZE;
-  din.size = xint(off);
-  winode(rootino, &din);
+//  // fix size of root inode dir
+//  rinode(rootino, &din);
+//  off = xint(din.size);
+//  off = ((off/BSIZE) + 1) * BSIZE;
+//  din.size = xint(off);
+//  winode(rootino, &din);
 
   balloc(freeblock);
 

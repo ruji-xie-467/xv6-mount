@@ -7,6 +7,7 @@
 #include "param.h"
 #include "stat.h"
 #include "sysmount.h"
+#include "loopdev.h"
 
 
 void mountinit(void) {
@@ -47,7 +48,7 @@ struct mntent * mntdup(struct mntent * mntent) {
 }
 
 void mntput(struct mntent * mntent) {
-  cprintf("mntput %d, ref: %d...\n", (int) mntent->devno, (int) mntent->refcnt);
+//  cprintf("mntput %d, ref: %d...\n", (int) mntent->devno, (int) mntent->refcnt);
   acquire(&gmnt.lock);
   mntent->refcnt--;
   release(&gmnt.lock);
@@ -98,6 +99,7 @@ int sys_mount(void) {
   }
 
   uint devno = getorcreatedev(devi);
+  is_loop_mounted = 1;
   struct mntent * newmntent = mntalloc();
 
   newmntent->devno = devno;
@@ -196,12 +198,15 @@ int sys_umount(void) {
   }
 
   *pre = cur->next;
-  release(&gmnt.lock); 
+  release(&gmnt.lock);
+  
+  devput(cur->devno);
 
   cur->devno = 0;
   cur->mnti = 0;
   cur->next = 0;
   cur->refcnt = 0;
+  is_loop_mounted = 0;
 
   struct inode * devi = getlloopdevi(cur->devno);
   iput(devi);

@@ -6,6 +6,7 @@
 #include "file.h"
 #include "buf.h"
 #include "loopdev.h"
+#include "log.h"
 
 // TODO: persist to disk
 struct {
@@ -81,12 +82,22 @@ struct buf* loopdev_read(struct buf* b) {
 }
 
 void loopdev_write(struct buf* b) {
+//  begin_op();
+//  is_loop_mounted = 0;
+  log.outstanding++;
   uint devno = b->dev; 
   uint blockno = b->blockno;
   struct inode * ip = getlloopdevi(devno);
   writei(ip, (char*) b->data, blockno * BSIZE, BSIZE);
   b->flags |= B_VALID;
   b->flags &= ~B_DIRTY;
+
+  log.outstanding--;
+  if (log.outstanding != 0) {
+    panic("[loopdev_write] trick failed"); // log should not be access by any other processes
+  }
+//  is_loop_mounted = 1;
+//  end_op();
 }
 
 
