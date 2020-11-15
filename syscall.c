@@ -129,13 +129,9 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-<<<<<<< HEAD
-
-[SYS_unshare] sys_unshare,
-=======
 [SYS_mount]   sys_mount,
 [SYS_umount]  sys_umount,
->>>>>>> 8fb2acea578a9fa667bc505b67326569d2615622
+[SYS_unshare] sys_unshare,
 };
 
 void
