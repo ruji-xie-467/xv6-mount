@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "namespace.h"
 #include "pid_namespace.h"
+#include "spinlock.h"
+#include "sysmount.h"
 
 struct {
   struct spinlock lock;
@@ -321,7 +323,7 @@ exit(int exit_state)
   int fd;
 
   //set exit state
-  curproc->exit_state = exit_state; 
+  curproc->exit_state = exit_state;
 
   if(curproc == initproc)
     panic("init exiting");
@@ -338,6 +340,9 @@ exit(int exit_state)
   iput(curproc->cwd);
   end_op();
   curproc->cwd = 0;
+
+  // mntput(curproc->cwdmnt);
+  // curproc->cwdmnt = 0;
 
   // try to find process with pid = 1 in current pid_namespace
   struct proc* proc_with_pid_1 = NULL;
@@ -370,7 +375,7 @@ exit(int exit_state)
       }
     }
     // Mark pid 1 process was killed
-    cur_pid_namespace->is_pid_1_killed = true; 
+    cur_pid_namespace->is_pid_1_killed = true;
 
   } else { // The current process does not hold pid 1 within its namespace
     // Pass the child processes of the current process to pid 1 process within the namespace

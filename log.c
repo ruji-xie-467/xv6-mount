@@ -5,6 +5,8 @@
 #include "sleeplock.h"
 #include "fs.h"
 #include "buf.h"
+#include "log.h"
+#include "loopdev.h"
 
 // Simple logging that allows concurrent FS system calls.
 //
@@ -29,23 +31,9 @@
 //   ...
 // Log appends are synchronous.
 
-// Contents of the header block, used for both the on-disk header block
-// and to keep track in memory of logged block# before commit.
-struct logheader {
-  int n;
-  int block[LOGSIZE];
-};
 
-struct log {
-  struct spinlock lock;
-  int start;
-  int size;
-  int outstanding; // how many FS sys calls are executing.
-  int committing;  // in commit(), please wait.
-  int dev;
-  struct logheader lh;
-};
-struct log log;
+
+
 
 static void recover_from_log(void);
 static void commit();
@@ -62,6 +50,11 @@ initlog(int dev)
   log.start = sb.logstart;
   log.size = sb.nlog;
   log.dev = dev;
+
+  loop_log.start = sb.logstart;
+  loop_log.size = sb.nlog;
+  loop_log.dev = 0 | LOOPDEV_MASK;
+
   recover_from_log();
 }
 
@@ -79,12 +72,33 @@ install_trans(void)
     brelse(lbuf);
     brelse(dbuf);
   }
+
+}
+
+static void
+install_trans_loop(void)
+{
+  if (!is_loop_mounted) {
+    panic("[install_trans_loop] loop dev not mounted");
+  }
+  int tail;
+
+  for (tail = 0; tail < loop_log.lh.n; tail++) {
+    struct buf *lbuf = bread(loop_log.dev, loop_log.start+tail+1); // read log block
+    struct buf *dbuf = bread(loop_log.dev, loop_log.lh.block[tail]); // read dst
+    memmove(dbuf->data, lbuf->data, BSIZE);  // copy block to dst
+    bwrite(dbuf);  // write dst to disk
+    brelse(lbuf);
+    brelse(dbuf);
+  }
+
 }
 
 // Read the log header from disk into the in-memory log header
 static void
 read_head(void)
 {
+
   struct buf *buf = bread(log.dev, log.start);
   struct logheader *lh = (struct logheader *) (buf->data);
   int i;
@@ -93,7 +107,25 @@ read_head(void)
     log.lh.block[i] = lh->block[i];
   }
   brelse(buf);
+
 }
+
+//// Read the log header from disk into the in-memory log header
+//static void
+//read_head_loop(void)
+//{
+//  if (!is_loop_mounted) {
+//    panic("[read_head_loop] loop dev not mounted");
+//  }
+//  struct buf *buf = bread(loop_log.dev, loop_log.start);
+//  struct logheader *lh = (struct logheader *) (buf->data);
+//  int i;
+//  loop_log.lh.n = lh->n;
+//  for (i = 0; i < loop_log.lh.n; i++) {
+//    loop_log.lh.block[i] = lh->block[i];
+//  }
+//  brelse(buf);
+//}
 
 // Write in-memory log header to disk.
 // This is the true point at which the
@@ -113,11 +145,29 @@ write_head(void)
 }
 
 static void
+write_head_loop(void)
+{
+  if (!is_loop_mounted) {
+    panic("[write_head_loop] loop dev not mounted");
+  }
+  struct buf *buf = bread(loop_log.dev, loop_log.start);
+  struct logheader *hb = (struct logheader *) (buf->data);
+  int i;
+  hb->n = loop_log.lh.n;
+  for (i = 0; i < loop_log.lh.n; i++) {
+    hb->block[i] = loop_log.lh.block[i];
+  }
+  bwrite(buf);
+  brelse(buf);
+}
+
+static void
 recover_from_log(void)
 {
   read_head();
   install_trans(); // if committed, copy from log to disk
   log.lh.n = 0;
+  loop_log.lh.n = 0;
   write_head(); // clear the log
 }
 
@@ -125,15 +175,17 @@ recover_from_log(void)
 void
 begin_op(void)
 {
+  // no need to use loop_lop.committing we always lock loop_log with log
   acquire(&log.lock);
   while(1){
-    if(log.committing){
+    if(log.committing || (is_loop_mounted && loop_log.committing)) {
       sleep(&log, &log.lock);
-    } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE){
+    } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE || (is_loop_mounted && loop_log.lh.n + (loop_log.outstanding+1)*MAXOPBLOCKS > LOGSIZE)) {
       // this op might exhaust log space; wait for commit.
       sleep(&log, &log.lock);
     } else {
       log.outstanding += 1;
+      loop_log.outstanding += 1; // should be the same as log.outstanding
       release(&log.lock);
       break;
     }
@@ -149,11 +201,14 @@ end_op(void)
 
   acquire(&log.lock);
   log.outstanding -= 1;
-  if(log.committing)
-    panic("log.committing");
-  if(log.outstanding == 0){
+  loop_log.outstanding -= 1; // should be the same as log.outstanding
+
+  if(log.committing || loop_log.committing)
+    panic("log is committing");
+  if(log.outstanding == 0 && loop_log.outstanding == 0){
     do_commit = 1;
     log.committing = 1;
+    loop_log.committing = 1;
   } else {
     // begin_op() may be waiting for log space,
     // and decrementing log.outstanding has decreased
@@ -168,6 +223,7 @@ end_op(void)
     commit();
     acquire(&log.lock);
     log.committing = 0;
+    loop_log.committing = 0;
     wakeup(&log);
     release(&log.lock);
   }
@@ -189,16 +245,48 @@ write_log(void)
   }
 }
 
+// Copy modified blocks from cache to loop_log.
+static void
+write_log_loop(void)
+{
+  if (!is_loop_mounted) {
+    panic("[write_log_loop] loop dev not mounted");
+  }
+  int tail;
+  for (tail = 0; tail < loop_log.lh.n; tail++) {
+    struct buf *to = bread(loop_log.dev, loop_log.start+tail+1); // log block
+    struct buf *from = bread(loop_log.dev, loop_log.lh.block[tail]); // cache block
+    memmove(to->data, from->data, BSIZE);
+    bwrite(to);  // write the log
+    brelse(from);
+    brelse(to);
+  }
+}
+
 static void
 commit()
 {
+  if (is_loop_mounted && loop_log.lh.n > 0) {
+    write_log_loop();     // Write modified blocks from cache to log
+    write_head_loop();    // Write header to disk -- the real commit
+    install_trans_loop(); // Now install writes to home locations
+    write_head_loop();    // Erase the transaction from the log
+  }
+
+  if (is_loop_mounted && loop_log.lh.n > 0 && log.lh.n == 0) {
+    panic("[commit] loop_log is written but log is not written!");
+  }
+
   if (log.lh.n > 0) {
     write_log();     // Write modified blocks from cache to log
     write_head();    // Write header to disk -- the real commit
     install_trans(); // Now install writes to home locations
-    log.lh.n = 0;
     write_head();    // Erase the transaction from the log
   }
+
+  log.lh.n = 0;
+  loop_log.lh.n = 0;
+
 }
 
 // Caller has modified b->data and is done with the buffer.
@@ -215,20 +303,39 @@ log_write(struct buf *b)
 {
   int i;
 
-  if (log.lh.n >= LOGSIZE || log.lh.n >= log.size - 1)
-    panic("too big a transaction");
-  if (log.outstanding < 1)
-    panic("log_write outside of trans");
+  if (!isloopdev(b->dev)) {
+    if (log.lh.n >= LOGSIZE || log.lh.n >= log.size - 1)
+      panic("too big a transaction");
+    if (log.outstanding < 1)
+      panic("log_write outside of trans");
 
-  acquire(&log.lock);
-  for (i = 0; i < log.lh.n; i++) {
-    if (log.lh.block[i] == b->blockno)   // log absorbtion
-      break;
+    acquire(&log.lock);
+    for (i = 0; i < log.lh.n; i++) {
+      if (log.lh.block[i] == b->blockno)   // log absorbtion
+        break;
+    }
+    log.lh.block[i] = b->blockno;
+    if (i == log.lh.n)
+      log.lh.n++;
+    b->flags |= B_DIRTY; // prevent eviction
+    release(&log.lock);
+  } else {
+    if (loop_log.lh.n >= LOGSIZE || loop_log.lh.n >= loop_log.size - 1)
+      panic("too big a transaction");
+    if (loop_log.outstanding < 1)
+      panic("log_write outside of trans");
+
+    acquire(&log.lock);
+    for (i = 0; i < loop_log.lh.n; i++) {
+      if (loop_log.lh.block[i] == b->blockno)   // log absorbtion
+        break;
+    }
+    loop_log.lh.block[i] = b->blockno;
+    if (i == loop_log.lh.n)
+      loop_log.lh.n++;
+    b->flags |= B_DIRTY; // prevent eviction
+    release(&log.lock);
   }
-  log.lh.block[i] = b->blockno;
-  if (i == log.lh.n)
-    log.lh.n++;
-  b->flags |= B_DIRTY; // prevent eviction
-  release(&log.lock);
+
 }
 

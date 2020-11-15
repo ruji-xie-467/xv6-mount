@@ -10,6 +10,7 @@ OBJS = \
 	kbd.o\
 	lapic.o\
 	log.o\
+	loopdev.o\
 	main.o\
 	pid_namespace.o\
 	mp.o\
@@ -24,6 +25,7 @@ OBJS = \
 	syscall.o\
 	sysfile.o\
 	sysnamespace.o\
+	sysmount.o\
 	sysproc.o\
 	trapasm.o\
 	trap.o\
@@ -170,16 +172,21 @@ UPROGS=\
 	_ln\
 	_ls\
 	_mkdir\
+	_mount\
 	_rm\
 	_sh\
 	_stressfs\
+	_umount\
 	_usertests\
 	_pid_namespace_test\
 	_wc\
 	_zombie\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+l.img: mkfs README
+	./mkfs 1 l.img README
+
+fs.img: mkfs README $(UPROGS) l.img
+	./mkfs 0 fs.img README $(UPROGS) l.img
 
 -include *.d
 
@@ -187,7 +194,7 @@ clean:
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*.o *.d *.asm *.sym vectors.S bootblock entryother \
 	initcode initcode.out kernel xv6.img fs.img kernelmemfs \
-	xv6memfs.img mkfs .gdbinit \
+	xv6memfs.img l.img mkfs .gdbinit \
 	$(UPROGS)
 
 # make a printout
@@ -245,8 +252,8 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
-	ln.c ls.c mkdir.c pid_namespace_test.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c umalloc.c\
+	ln.c ls.c mkdir.c mount.c pid_namespace_test.c rm.c stressfs.c usertests.c wc.c zombie.c\
+	printf.c umalloc.c umount.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

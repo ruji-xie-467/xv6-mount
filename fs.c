@@ -20,6 +20,7 @@
 #include "fs.h"
 #include "buf.h"
 #include "file.h"
+#include "sysmount.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 static void itrunc(struct inode*);
@@ -348,6 +349,16 @@ iput(struct inode *ip)
 
   acquire(&icache.lock);
   ip->ref--;
+  if (ip->ref == 0) {
+    ip->type = 0;
+    ip->major = 0;
+    ip->minor = 0;
+    ip->nlink = 0;
+    ip->size = 0;
+    for(int i = 0; i <= NDIRECT; i++){
+      ip->addrs[i] = 0;
+    }
+  }
   release(&icache.lock);
 }
 
@@ -624,35 +635,75 @@ skipelem(char *path, char *name)
 static struct inode*
 namex(char *path, int nameiparent, char *name)
 {
+  
   struct inode *ip, *next;
+  // struct mntent *mp;
 
-  if(*path == '/')
+  if(*path == '/') {
     ip = iget(ROOTDEV, ROOTINO);
-  else
+    // mp = mntdup(gmnt.prootmnt);
+  } else {
     ip = idup(myproc()->cwd);
+    // mp = mntdup(myproc()->cwdmnt);
+  }
+
+  // TODO: finish namex
 
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
     if(ip->type != T_DIR){
+      // mntput(mp);
       iunlockput(ip);
       return 0;
     }
     if(nameiparent && *path == '\0'){
       // Stop one level early.
+      // mntput(mp);
       iunlock(ip);
       return ip;
     }
+    
+    // TODO: when ..  next locked, but ip unlocked
+    if (isloopdev(ip->dev) && ip->inum == ROOTINO && namecmp(name, "..") == 0) {
+      struct inode * mnti = idup(getmntpnt(ip->dev));
+      iunlock(ip);
+      iput(ip);
+      ip = mnti;
+      ilock(ip);
+      if(ip->type != T_DIR) {
+        panic("dirlookup not DIR");
+      }
+    }
+
     if((next = dirlookup(ip, name, 0)) == 0){
+      // mntput(mp);
       iunlockput(ip);
       return 0;
     }
+
+
+    struct mntent * nextmp;
+    if ((nextmp = mntlookup(next)) != 0) {
+      uint newdevno = nextmp->devno;
+      
+      iput(next);
+      next = iget(newdevno, ROOTINO); 
+      
+      mntput(nextmp);
+      // mp = nextmp;
+    }
+
     iunlockput(ip);
     ip = next;
   }
+
+  // mntput(mp);
+
   if(nameiparent){
     iput(ip);
     return 0;
   }
+
   return ip;
 }
 

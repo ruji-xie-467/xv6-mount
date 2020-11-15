@@ -20,7 +20,6 @@
 // Disk layout:
 // [ boot block | sb block | log | inode blocks | free bit map | data blocks ]
 
-int nbitmap = FSSIZE/(BSIZE*8) + 1;
 int ninodeblocks = NINODES / IPB + 1;
 int nlog = LOGSIZE;
 int nmeta;    // Number of meta blocks (boot, sb, nlog, inode, bitmap)
@@ -68,33 +67,38 @@ int
 main(int argc, char *argv[])
 {
   int i, cc, fd;
-  uint rootino, inum, off;
+  uint rootino, inum;
+//  uint off;
   struct dirent de;
   char buf[BSIZE];
-  struct dinode din;
+//  struct dinode din;
 
 
   static_assert(sizeof(int) == 4, "Integers must be 4 bytes!");
 
-  if(argc < 2){
-    fprintf(stderr, "Usage: mkfs fs.img files...\n");
+  if(argc < 3){
+    fprintf(stderr, "Usage: mkfs is_loopdev_image fs.img files...\n");
     exit(1);
   }
 
   assert((BSIZE % sizeof(struct dinode)) == 0);
   assert((BSIZE % sizeof(struct dirent)) == 0);
 
-  fsfd = open(argv[1], O_RDWR|O_CREAT|O_TRUNC, 0666);
+  int is_loopdev_image = strcmp(argv[1], "1") == 0 ? 1 : 0;
+  int fsize = is_loopdev_image ? 100 : FSSIZE;
+  int nbitmap = fsize/(BSIZE*8) + 1;
+
+  fsfd = open(argv[2], O_RDWR|O_CREAT|O_TRUNC, 0666);
   if(fsfd < 0){
-    perror(argv[1]);
+    perror(argv[2]);
     exit(1);
   }
 
   // 1 fs block = 1 disk sector
   nmeta = 2 + nlog + ninodeblocks + nbitmap;
-  nblocks = FSSIZE - nmeta;
+  nblocks = fsize - nmeta;
 
-  sb.size = xint(FSSIZE);
+  sb.size = xint(fsize);
   sb.nblocks = xint(nblocks);
   sb.ninodes = xint(NINODES);
   sb.nlog = xint(nlog);
@@ -103,11 +107,11 @@ main(int argc, char *argv[])
   sb.bmapstart = xint(2+nlog+ninodeblocks);
 
   printf("nmeta %d (boot, super, log blocks %u inode blocks %u, bitmap blocks %u) blocks %d total %d\n",
-         nmeta, nlog, ninodeblocks, nbitmap, nblocks, FSSIZE);
+         nmeta, nlog, ninodeblocks, nbitmap, nblocks, fsize);
 
   freeblock = nmeta;     // the first free block that we can allocate
 
-  for(i = 0; i < FSSIZE; i++)
+  for(i = 0; i < fsize; i++)
     wsect(i, zeroes);
 
   memset(buf, 0, sizeof(buf));
@@ -127,7 +131,7 @@ main(int argc, char *argv[])
   strcpy(de.name, "..");
   iappend(rootino, &de, sizeof(de));
 
-  for(i = 2; i < argc; i++){
+  for(i = 3; i < argc; i++){
     assert(index(argv[i], '/') == 0);
 
     if((fd = open(argv[i], 0)) < 0){
@@ -155,12 +159,12 @@ main(int argc, char *argv[])
     close(fd);
   }
 
-  // fix size of root inode dir
-  rinode(rootino, &din);
-  off = xint(din.size);
-  off = ((off/BSIZE) + 1) * BSIZE;
-  din.size = xint(off);
-  winode(rootino, &din);
+//  // fix size of root inode dir
+//  rinode(rootino, &din);
+//  off = xint(din.size);
+//  off = ((off/BSIZE) + 1) * BSIZE;
+//  din.size = xint(off);
+//  winode(rootino, &din);
 
   balloc(freeblock);
 
