@@ -127,7 +127,7 @@ int sys_umount(void) {
   }
 
   begin_op();
-  cprintf("we will umount %s\n", mntpnt_path);
+//  cprintf("we will umount %s\n", mntpnt_path);
   struct inode * mnti = namei(mntpnt_path);
 
 
@@ -211,8 +211,8 @@ int sys_umount(void) {
   struct inode * devi = getlloopdevi(cur->devno);
   iput(devi);
   iput(mnti);
-  cprintf("devi->ref: %d\n", devi->ref);
-  cprintf("mnti->ref: %d\n", mnti->ref);
+//  cprintf("devi->ref: %d\n", devi->ref);
+//  cprintf("mnti->ref: %d\n", mnti->ref);
   end_op();
   return 0;
 
